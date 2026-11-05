@@ -1,0 +1,151 @@
+
+{% extends 'chat/base.html' %}
+{% load static %}
+
+{% block title %}{{ room.name }} | Chatroom{% endblock %}
+
+{% block content %}
+
+<section class="chat-shell">
+
+  <div class="chat-head">
+
+    <div class="chat-room-info">
+      <a class="back-link" href="{% url 'home' %}">
+        ← Back to chatrooms
+      </a>
+
+      <div class="chat-title">
+        <div class="room-icon">#</div>
+        <div>
+          <h1>{{ room.name }}</h1>
+          <p class="muted current-user">
+            Chatting as <strong>{{ username }}</strong>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <span id="connection-status" class="status connecting">
+      <span class="status-dot"></span>
+      Connecting...
+    </span>
+
+  </div>
+
+  <div class="messages" id="messages" aria-live="polite">
+
+    {% for item in room_messages %}
+
+      <article class="message">
+
+        <div class="message-meta">
+          <strong>{{ item.username }}</strong>
+          <time datetime="{{ item.timestamp|date:'c' }}">
+            {{ item.timestamp|date:'M j, Y H:i' }}
+          </time>
+        </div>
+
+        <p>{{ item.content }}</p>
+
+      </article>
+
+    {% empty %}
+
+      <div id="empty-state" class="empty-state">
+        <div class="empty-icon">💬</div>
+        <h3>It's quiet in here!</h3>
+        <p>Be the first one to start a conversation.</p>
+      </div>
+
+    {% endfor %}
+
+  </div>
+
+  <form id="message-form" class="composer">
+
+    <input
+      id="message-input"
+      maxlength="2000"
+      autocomplete="off"
+      placeholder="Type your message here..."
+      aria-label="Message"
+    >
+
+    <button class="button" type="submit">
+      Send <span>➤</span>
+    </button>
+
+  </form>
+
+  <p id="error-message" class="form-error" role="alert"></p>
+
+</section>
+
+{{ room.slug|json_script:"room-slug" }}
+{{ username|json_script:"username" }}
+
+<script>
+const slug = JSON.parse(document.getElementById('room-slug').textContent);
+const username = JSON.parse(document.getElementById('username').textContent);
+const messages = document.getElementById('messages');
+const form = document.getElementById('message-form');
+const input = document.getElementById('message-input');
+const status = document.getElementById('connection-status');
+const error = document.getElementById('error-message');
+const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const socket = new WebSocket(`${protocol}://${window.location.host}/ws/chat/${slug}/`);
+
+
+function scrollToLatest() {
+  messages.scrollTop = messages.scrollHeight;
+}
+
+function addMessage(data) {
+  document.getElementById('empty-state')?.remove();
+  const article = document.createElement('article');
+  article.className = 'message';
+  const meta = document.createElement('div');
+  meta.className = 'message-meta';
+  const sender = document.createElement('strong');
+  sender.textContent = data.username;
+  const time = document.createElement('time');
+  time.textContent = new Date(data.timestamp).toLocaleString();
+  meta.append(sender, time);
+  const text = document.createElement('p');
+  text.textContent = data.message;
+  article.append(meta, text);
+  messages.appendChild(article);
+  scrollToLatest();
+}
+
+socket.addEventListener('open', () => {
+  status.textContent = 'Connected';
+  status.className = 'status connected';
+  input.focus();
+});
+socket.addEventListener('close', () => {
+  status.textContent = 'Disconnected';
+  status.className = 'status disconnected';
+});
+socket.addEventListener('error', () => {
+  status.textContent = 'Connection error';
+  status.className = 'status disconnected';
+});
+socket.addEventListener('message', (event) => {
+  const data = JSON.parse(event.data);
+  if (data.type === 'message') addMessage(data);
+  if (data.type === 'error') error.textContent = data.message;
+});
+form.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const message = input.value.trim();
+  if (!message || socket.readyState !== WebSocket.OPEN) return;
+  socket.send(JSON.stringify({username, message}));
+  input.value = '';
+  error.textContent = '';
+});
+scrollToLatest();
+</script>
+
+{% endblock %}

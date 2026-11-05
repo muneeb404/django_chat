@@ -1,0 +1,146 @@
+
+{% extends 'chat/base.html' %}
+{% load static %}
+
+{% block title %}Chatrooms | Chatroom{% endblock %}
+
+{% block content %}
+
+<section class="welcome-card">
+  <div class="welcome-content">
+    <span class="eyebrow"><span class="live-dot"></span> REAL-TIME GROUP CHAT</span>
+
+    <h1>Your conversations,<br>all in one place.</h1>
+
+    <p class="muted">
+      Connect with people instantly. Choose a username,
+      pick a room and start chatting.
+    </p>
+
+    <form method="post" class="username-form">
+      {% csrf_token %}
+
+      <div class="input-group">
+        <label for="username-input">YOUR USERNAME</label>
+        <input
+          id="username-input"
+          name="username"
+          value="{{ username }}"
+          maxlength="50"
+          placeholder="Enter your username"
+          autocomplete="nickname"
+          required
+        >
+      </div>
+
+      {% if error %}
+        <p class="form-error">{{ error }}</p>
+      {% endif %}
+
+      <button class="button" type="submit">
+        Continue <span>→</span>
+      </button>
+    </form>
+
+    <div class="privacy-note">
+      <span>✓</span> No account or password required
+    </div>
+  </div>
+
+  <div class="welcome-decoration">
+    <div class="decoration-circle circle-one"></div>
+    <div class="decoration-circle circle-two"></div>
+    <div class="chat-preview">
+      <div class="preview-header">
+        <span class="preview-avatar">C</span>
+        <div>
+          <strong>Community</strong>
+          <small>Group conversation</small>
+        </div>
+        <span class="preview-online"></span>
+      </div>
+      <div class="preview-message">Hey everyone! 👋</div>
+      <div class="preview-message preview-reply">Welcome to the room!</div>
+      <div class="preview-message">Let's get started.</div>
+      <div class="preview-input">Write a message...</div>
+    </div>
+  </div>
+</section>
+
+<div class="dashboard-head">
+  <div>
+    <p class="eyebrow">YOUR COMMUNITY</p>
+    <h2>Explore chatrooms</h2>
+    <p class="muted">Find a room and join the conversation.</p>
+  </div>
+
+  <form class="create-room" method="post">
+    {% csrf_token %}
+
+    <input
+      id="create-username"
+      type="hidden"
+      name="username"
+      value="{{ username }}"
+    >
+
+    <input
+      name="name"
+      maxlength="100"
+      placeholder="Enter room name"
+      required
+    >
+
+    <button class="button" type="submit">
+      <span>+</span> Create room
+    </button>
+  </form>
+</div>
+
+<section class="room-grid">
+
+  {% for room in rooms %}
+
+    <form class="room-card" method="post">
+      {% csrf_token %}
+
+      <input type="hidden" name="action" value="join">
+      <input class="join-username" type="hidden" name="username" value="{{ username }}">
+      <input type="hidden" name="slug" value="{{ room.slug }}">
+
+      <div class="room-icon">#</div>
+
+      <div class="room-info">
+        <strong>{{ room.name }}</strong>
+        <small>Join this conversation</small>
+      </div>
+
+      <button class="join-button" type="submit">
+        Join <span>→</span>
+      </button>
+    </form>
+
+  {% empty %}
+
+    <div class="empty-state">
+      <div class="empty-icon">#</div>
+      <h3>No chatrooms yet</h3>
+      <p>Create your first room and start a conversation.</p>
+    </div>
+
+  {% endfor %}
+
+</section>
+
+<script>
+const usernameInput = document.getElementById('username-input');
+
+usernameInput.addEventListener('input', () => {
+  document.getElementById('create-username').value = usernameInput.value;
+  document.querySelectorAll('.join-username').forEach((field) => {
+    field.value = usernameInput.value;
+  });
+});
+</script>
+
+{% endblock %}
