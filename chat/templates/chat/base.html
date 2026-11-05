@@ -747,7 +747,7 @@
 </style>
 </head>
 <body>
-  <header class="topbar">
+  {% comment %} <header class="topbar">
     <div class="topbar-inner">
       <a class="brand" href="{% url 'home' %}">
         <span class="brand-icon">#</span>
@@ -755,7 +755,7 @@
       </a>
       <span class="nav-label">REAL-TIME MESSAGING</span>
     </div>
-  </header>
+  </header> {% endcomment %}
 
   <main class="page">
     {% if messages %}

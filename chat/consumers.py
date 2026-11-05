@@ -19,7 +19,9 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
             await self.channel_layer.group_discard(self.group_name, self.channel_name)
 
     async def receive_json(self, content, **kwargs):
+        
         username = str(content.get('username', '')).strip()
+        
         if not await self.validate_username(username):
             await self.send_json({'type': 'error', 'message': 'Please enter a valid username.'})
             return
@@ -30,6 +32,7 @@ class ChatConsumer(AsyncJsonWebsocketConsumer):
         if len(text) > 2000:
             await self.send_json({'type': 'error', 'message': 'Message must be 2000 characters or fewer.'})
             return
+        
         message = await self.save_message(username, text)
         await self.channel_layer.group_send(self.group_name, {
             'type': 'chat.message',
